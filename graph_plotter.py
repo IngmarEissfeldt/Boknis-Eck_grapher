@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import io
+from datetime import datetime, timedelta
 
 
 #Plots selected data.
@@ -81,45 +82,47 @@ with open("BoknisEck_2015-2023.tab", "r", encoding="utf-8") as file:
 df_str_io = io.StringIO(df_str)
 df = pd.read_csv(df_str_io, sep="\t")
 
-#Remove unnecessary columns
-df.drop(["Latitude", "Longitude", "Sample label"], axis=1, inplace=True)
+def df_preprocessing(df, selected_range):
+	#Remove unnecessary columns
+	df.drop(["Latitude", "Longitude", "Sample label"], axis=1, inplace=True)
+
+	problematic_columns = ["[NO3]- [µmol/l]", "[NO2]- [µmol/l]", "[PO4]3- [µmol/l]"]
+
+	#Replace '<0.01' with 0, convert to float and change flag to 7
+	for column in problematic_columns:
+		for row_pos, i in enumerate(df[column]):
+			if i == "<0.01":
+				df.iloc[row_pos, df.columns.get_loc(column)] = 0.00
+				df.iloc[row_pos, df.columns.get_loc(column) + 1] = 7
+		df[column] = df[column].astype(float)
+	 
+	start, end = selected_range
+	df = df[start:end]
+	
+	#The dataframe has 6 different depth measurements for every point in time. To have a df that can  plotted as a time series they have to be split
+	#Split df into depth specific dfs
+	df_1 = df[0::6]
+	df_5 = df[1::6]
+	df_10 = df[2::6]
+	df_15 = df[3::6]
+	df_20 = df[4::6]
+	df_25 = df[5::6]
+	
+	return df_1, df_5, df_10, df_15, df_20, df_25
+
 
 #Set Date/Time column to index
 df['Date/Time'] = pd.to_datetime(df['Date/Time'])
 df = df.set_index('Date/Time')
 
 
-problematic_columns = ["[NO3]- [µmol/l]", "[NO2]- [µmol/l]", "[PO4]3- [µmol/l]"]
+df_1 = {}
+df_5 = {}
+df_10 = {}
+df_15 = {}
+df_20 = {}
+df_25 = {}
 
-#Replace '<0.01' with 0, convert to float and change flag to 7
-for column in problematic_columns:
-	for row_pos, i in enumerate(df[column]):
-		if i == "<0.01":
-			df.iloc[row_pos, df.columns.get_loc(column)] = 0.00
-			df.iloc[row_pos, df.columns.get_loc(column) + 1] = 7
-	df[column] = df[column].astype(float)
- 
-
-
-#The dataframe has 6 different depth measurements for every point in time. To have a df that can  plotted as a time series they have to be split
-#Split df into depth specific dfs
-df_1 = df[0::6]
-df_5 = df[1::6]
-df_10 = df[2::6]
-df_15 = df[3::6]
-df_20 = df[4::6]
-df_25 = df[5::6]
-
-
-#Maps UI names to code names
-depth_map = {
-	"1": df_1,
-	"5": df_5,
-	"10": df_10,
-	"15": df_15,
-	"20": df_20,
-	"25": df_25
-	}
 
 #Maps UI names to df names
 column_map = {
@@ -151,23 +154,49 @@ with st.sidebar.expander("See description"):
 stats = st.sidebar.checkbox("Toggle for stats")
 
 #UI to toggle inaccuracy colors
-inaccuracy_colors = st.sidebar.checkbox("Toggle for coloring inaccurate data")
+show_flags = st.sidebar.checkbox("Toggle for coloring inaccurate data")
 
 #UI to display color legend
-if inaccuracy_colors:
+if show_flags:
 	st.sidebar.write(pd.DataFrame({"Color": ["Yellow", "Red"], "Meaning": ["Inaccurate data", "Missing data"]}))
 
 two_plots = st.sidebar.checkbox("Toggle to graph 2 seperate plots")
 
 
 pltaspect = st.sidebar.slider(
-    label="Pick an aspect ratio",
-    min_value=0.01,
-    max_value=1.0,
-    value=0.3,
-    step=0.01,
-    help="Default: 0.3"
+	label="Pick an aspect ratio",
+	min_value=0.01,
+	max_value=1.0,
+	value=0.3,
+	step=0.01,
+	help="Default: 0.3"
 )
+
+
+range_start = df.index[0].to_pydatetime()
+range_end = df.index[-1].to_pydatetime()
+
+# Range datetime slider
+selected_range = st.sidebar.slider(
+    "Select time range",
+    min_value=range_start,     
+    max_value=range_end,    
+    value=(range_start, range_end)
+)
+
+
+
+df_1, df_5, df_10, df_15, df_20, df_25 = df_preprocessing(df, selected_range)
+
+#Maps UI names to code names
+depth_map = {
+	"1": df_1,
+	"5": df_5,
+	"10": df_10,
+	"15": df_15,
+	"20": df_20,
+	"25": df_25
+}
 
 
 #UI to display name legend
@@ -181,8 +210,9 @@ if to_plot1:
 	download_1_placeholder = st.sidebar.empty()
 
 #Map selection names to column names
-columns1 = [column_map[x] for x in to_plot1]
+variables1 = [column_map[x] for x in to_plot1]
 flags1 = [flag_map[x] for x in to_plot1]
+columns1 = variables1 + flags1
 
 current_df1 = depth_map[depth1][columns1]
 
@@ -201,23 +231,20 @@ if two_plots:
 
 
 #Make custom name legend for selected columns
-legend = pd.DataFrame({'Common': to_plot1, 'Scientific': columns1})
+legend = pd.DataFrame({'Common': to_plot1, 'Scientific': variables1})
 if two_plots:
 	legend2 = pd.DataFrame({'Common': to_plot2, 'Scientific': columns2})
 	legend = pd.concat([legend, legend2], ignore_index=True)
 name_legend_placeholder.write(legend)
 
-#describe()
-#st.write(depth_map[depth1][columns1].describe())
-
 
 
 if to_plot1:
-	plot1 = plot_data(current_df1, columns1, flags1, stats, pltaspect)
+	plot1 = plot_data(current_df1, variables1, flags1, show_flags, pltaspect)
 	st.pyplot(plot1)
 	download_button(plot1, download_1_placeholder, 1)
 
 if to_plot2 and two_plots:
-	plot2 = plot_data(current_df2, columns2, flags2, stats, pltaspect)
+	plot2 = plot_data(current_df2, variables2, flags2, show_flags, pltaspect)
 	st.pyplot(plot2)
 	download_button(plot2, download_2_placeholder, 2)
