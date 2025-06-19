@@ -225,15 +225,18 @@ if two_plots:
 	if to_plot2:
 		download_2_placeholder = st.sidebar.empty()
 	
-	columns2 = [column_map[x] for x in to_plot2]
+	variables2 = [column_map[x] for x in to_plot2]
 	flags2 = [flag_map[x] for x in to_plot2]
+	columns2 = variables2 + flags2
+	
 	current_df2 = depth_map[depth2][columns2]
 
 
 #Make custom name legend for selected columns
 legend = pd.DataFrame({'Common': to_plot1, 'Scientific': variables1})
+
 if two_plots:
-	legend2 = pd.DataFrame({'Common': to_plot2, 'Scientific': columns2})
+	legend2 = pd.DataFrame({'Common': to_plot2, 'Scientific': variables2})
 	legend = pd.concat([legend, legend2], ignore_index=True)
 name_legend_placeholder.write(legend)
 
