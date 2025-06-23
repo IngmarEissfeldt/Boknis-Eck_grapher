@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 def plot_data(df: pd.DataFrame,
 		vars: list[str],
 		flags: list[str],
+		depth: str,
 		show_flags: bool = False,
 		pltaspect: float = 0.3,
 		ax: plt.Axes | None = None) -> plt.Figure:
@@ -42,6 +43,7 @@ def plot_data(df: pd.DataFrame,
 				color='orange', label='_nolegend_', zorder=5)
 
 		ax.set_ylim(ymin, ymax)
+	ax.set_title("Depth: " + depth + "m")
 	ax.set_box_aspect(pltaspect)
 	return fig
 
@@ -240,14 +242,14 @@ if two_plots:
 	legend = pd.concat([legend, legend2], ignore_index=True)
 name_legend_placeholder.write(legend)
 
-
+st.write(current_df1)
 
 if to_plot1:
-	plot1 = plot_data(current_df1, variables1, flags1, show_flags, pltaspect)
+	plot1 = plot_data(current_df1, variables1, flags1, depth1, show_flags, pltaspect)
 	st.pyplot(plot1)
 	download_button(plot1, download_1_placeholder, 1)
 
 if to_plot2 and two_plots:
-	plot2 = plot_data(current_df2, variables2, flags2, show_flags, pltaspect)
+	plot2 = plot_data(current_df2, variables2, flags2, depth2, show_flags, pltaspect)
 	st.pyplot(plot2)
 	download_button(plot2, download_2_placeholder, 2)
