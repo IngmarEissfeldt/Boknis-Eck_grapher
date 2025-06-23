@@ -49,7 +49,7 @@ def plot_data(df: pd.DataFrame,
 
 
 #Sets download button
-def download_button(plot, element, key):
+def add_plot_to_zip(plot, element, depth, key):
 	#buffer for Download Button
 	buf = io.BytesIO()
 	plot.savefig(buf, format="png", dpi=300, bbox_inches="tight")
@@ -59,7 +59,7 @@ def download_button(plot, element, key):
 	element.download_button(
 		label=f"📥 Download plot ↑",
 		data=buf,
-		file_name="Boknis-Eck.png",
+		file_name="BE_" + depth + "m.png",
 		mime="image/png",
 		key=key
 	)
@@ -242,14 +242,12 @@ if two_plots:
 	legend = pd.concat([legend, legend2], ignore_index=True)
 name_legend_placeholder.write(legend)
 
-st.write(current_df1)
-
 if to_plot1:
 	plot1 = plot_data(current_df1, variables1, flags1, depth1, show_flags, pltaspect)
 	st.pyplot(plot1)
-	download_button(plot1, download_1_placeholder, 1)
+	add_plot_to_zip(plot1, download_1_placeholder, depth1, 1)
 
 if to_plot2 and two_plots:
 	plot2 = plot_data(current_df2, variables2, flags2, depth2, show_flags, pltaspect)
 	st.pyplot(plot2)
-	download_button(plot2, download_2_placeholder, 2)
+	add_plot_to_zip(plot2, download_2_placeholder, depth2, 2)
