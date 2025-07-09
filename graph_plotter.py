@@ -172,6 +172,10 @@ def select_variable(plotnum, scatterplot):
 	else:
 		to_plot.append(st.sidebar.selectbox("Choose var for plot "+ str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
 		to_plot.append(st.sidebar.selectbox("Choose other var for plot "+ str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
+
+		if to_plot[0] == to_plot[1]:
+			st.write("Please select 2 different variables for the scatter plot!")
+			to_plot = []
 	return to_plot
 
 st.set_page_config(layout="wide")
@@ -319,7 +323,7 @@ name_legend_placeholder = st.sidebar.empty()
 
 #UI to choose depth and columns
 depth1 = st.sidebar.selectbox("Choose depth in meter for plot 1", ["1", "5", "10", "15", "20", "25"])
-to_plot1 = select_variable(1, scatterplot)################################TODO IMPLEMENT SCATTERPLOT FUNCTIONALITY
+to_plot1 = select_variable(1, scatterplot)
 
 if to_plot1:
 	download_1_placeholder = st.sidebar.empty()
@@ -335,7 +339,7 @@ to_plot2 = []
 
 if two_plots:
 	depth2 = st.sidebar.selectbox("Choose depth in meter for plot 2", ["1", "5", "10", "15", "20", "25"])
-	to_plot2 = st.sidebar.multiselect("Choose vars for plot 2", ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"])
+	to_plot2 = select_variable(2, scatterplot)
 	
 	if to_plot2:
 		download_2_placeholder = st.sidebar.empty()
