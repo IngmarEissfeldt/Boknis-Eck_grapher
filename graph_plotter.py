@@ -1,69 +1,182 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import kaleido
+import plotly.graph_objects as go
 import io
 from datetime import datetime, timedelta
 
 
 #Plots selected data.
-def plot_data(df: pd.DataFrame,
+import pandas as pd
+import plotly.graph_objects as go
+
+import pandas as pd
+import plotly.graph_objects as go
+
+def plot_data(
+		df: pd.DataFrame,
 		vars: list[str],
 		flags: list[str],
 		show_flags: bool = False,
+		scatterplot: bool = False,
 		pltaspect: float = 0.3,
-		ax: plt.Axes | None = None) -> plt.Figure:
+	) -> go.Figure:
 	"""
-	Plot each variable in `vars` (with markers),
-	and if show_flags=True overlay:
+	If scatterplot=True, makes a scatter of vars[0] vs vars[1].
+	Otherwise plots each var over the index (lines+markers),
+	and if show_flags=True overlays:
 	- red dots where flag == 9 (missing)
-	- yellow dots where flag == 7 (inaccurate)
+	- orange dots where flag == 7 (inaccurate)
 	"""
-	if ax is None:
-		fig, ax = plt.subplots()
-	else:
-		fig = ax.figure
+	fig = go.Figure()
 
-	# plot the variables
-	df[vars].plot(ax=ax, marker='o', linestyle='-')
+	if scatterplot:
+		# require exactly two variables
+		if len(vars) != 2:
+			raise ValueError("scatterplot=True requires exactly two variables in `vars`.")
+		x_var, y_var = vars
+
+		# Base scatter
+		fig.add_trace(go.Scatter(
+			x=df[x_var],
+			y=df[y_var],
+			mode='markers',
+			name=f'{x_var} vs {y_var}'
+		))
+
+		# Optionally overlay flagged points on the scatter
+		if show_flags:
+			for var, flag_col in zip(vars, flags):
+				# align flags to their variable: color by missing/inacc on the *other* axis
+				idx_missing = df.index[df[flag_col] == 9]
+				idx_inacc   = df.index[df[flag_col] == 7]
+
+				# missing
+				if not idx_missing.empty:
+					fig.add_trace(go.Scatter(
+						x=df.loc[idx_missing, x_var],
+						y=df.loc[idx_missing, y_var],
+						mode='markers',
+						marker=dict(color='red', size=10, symbol='x'),
+						name=f'{var} missing',
+						showlegend=False
+					))
+				# inaccurate
+				if not idx_inacc.empty:
+					fig.add_trace(go.Scatter(
+						x=df.loc[idx_inacc, x_var],
+						y=df.loc[idx_inacc, y_var],
+						mode='markers',
+						marker=dict(color='orange', size=10, symbol='diamond'),
+						name=f'{var} inaccurate',
+						showlegend=False
+					))
+
+		fig.update_layout(
+			xaxis_title=x_var,
+			yaxis_title=y_var,
+			height=600,
+			margin=dict(t=30, b=30),
+			yaxis=dict(scaleanchor='x', scaleratio=pltaspect)
+		)
+		return fig
+
+	# time-series by default
+	for var in vars:
+		fig.add_trace(go.Scatter(
+		x=df.index,
+		y=df[var],
+		mode='lines+markers',
+		name=var
+	))
 
 	if show_flags:
-		ymin, ymax = ax.get_ylim()
-		# for each var/flag pair
+		# compute y-baseline for flags
+		ymin = df[vars].min().min()
+		y_offset = (df[vars].max().max() - ymin) * 0.05
+		marker_y = ymin - y_offset
+
 		for var_col, flag_col in zip(vars, flags):
-			# find indices
 			idx_missing = df.index[df[flag_col] == 9]
 			idx_inacc   = df.index[df[flag_col] == 7]
 
-			# scatter red for missing, yellow for inaccurate
-			ax.scatter(idx_missing, [ymin]*len(idx_missing),
-				color='red', label='_nolegend_', zorder=5)
-			ax.scatter(idx_inacc, [ymin]*len(idx_inacc),
-				color='orange', label='_nolegend_', zorder=5)
+			if not idx_missing.empty:
+				fig.add_trace(go.Scatter(
+					x=idx_missing,
+					y=[marker_y] * len(idx_missing),
+					mode='markers',
+					marker=dict(color='red', size=8),
+					name=f'{var_col} missing',
+					showlegend=False
+				))
 
-		ax.set_ylim(ymin, ymax)
-	ax.set_box_aspect(pltaspect)
+			if not idx_inacc.empty:
+				fig.add_trace(go.Scatter(
+					x=idx_inacc,
+					y=[marker_y] * len(idx_inacc),
+					mode='markers',
+					marker=dict(color='orange', size=8),
+					name=f'{var_col} inaccurate',
+					showlegend=False
+				))
+
+	fig.update_layout(
+	height=600,
+	yaxis=dict(scaleanchor='x', scaleratio=pltaspect),
+	margin=dict(t=30, b=30)
+	)
+
 	return fig
 
 
+
 #Sets download button
-def download_button(plot, element, key):
+def download_button(plot, var_list, depth, element, key):
+
+	var_map = {
+		"Nitrate": "Nia", 
+		"Nitrite": "Nii",
+		"Phosphate": "P",  
+		"Oxygen": "O", 
+		"Salinity": "Sa", 
+		"Silicate": "Si", 
+		"Temperature": "T"
+	}
+
+	file_name = "BE_" + depth
+	
+	for var in var_list:
+		file_name += "_" + var_map[var]
+	
+	file_name += ".png"
+
 	#buffer for Download Button
 	buf = io.BytesIO()
-	plot.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+	plot.write_image(buf)
 	buf.seek(0)  # rewind to beginning of buffer
 
 	#Download button
 	element.download_button(
 		label=f"📥 Download plot ↑",
 		data=buf,
-		file_name="Boknis-Eck.png",
+		file_name=file_name,
 		mime="image/png",
 		key=key
 	)
 
+def select_variable(plotnum, scatterplot):
+	to_plot = []
+	if  not scatterplot:
+		to_plot = st.sidebar.multiselect("Choose vars for plot "+ str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"])
+	else:
+		to_plot.append(st.sidebar.selectbox("Choose var for plot "+ str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
+		to_plot.append(st.sidebar.selectbox("Choose other var for plot "+ str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
+	return to_plot
 
 st.set_page_config(layout="wide")
+
+st.write("Click the top left arrow to begin!")
 
 #st. are streamlit UI elements
 st.title("Boknis Eck Data")
@@ -162,6 +275,8 @@ if show_flags:
 
 two_plots = st.sidebar.checkbox("Toggle to graph 2 seperate plots")
 
+scatterplot = st.sidebar.checkbox("Toggle scatterplot instead of timeseries")
+
 
 pltaspect = st.sidebar.slider(
 	label="Pick an aspect ratio",
@@ -204,7 +319,7 @@ name_legend_placeholder = st.sidebar.empty()
 
 #UI to choose depth and columns
 depth1 = st.sidebar.selectbox("Choose depth in meter for plot 1", ["1", "5", "10", "15", "20", "25"])
-to_plot1 = st.sidebar.multiselect("Choose vars for plot 1", ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"])
+to_plot1 = select_variable(1, scatterplot)################################TODO IMPLEMENT SCATTERPLOT FUNCTIONALITY
 
 if to_plot1:
 	download_1_placeholder = st.sidebar.empty()
@@ -243,11 +358,11 @@ name_legend_placeholder.write(legend)
 
 
 if to_plot1:
-	plot1 = plot_data(current_df1, variables1, flags1, show_flags, pltaspect)
-	st.pyplot(plot1)
-	download_button(plot1, download_1_placeholder, 1)
+	plot1 = plot_data(current_df1, variables1, flags1, show_flags, scatterplot, pltaspect)
+	st.plotly_chart(plot1)
+	download_button(plot1, to_plot1, depth1, download_1_placeholder, 1)
 
 if to_plot2 and two_plots:
-	plot2 = plot_data(current_df2, variables2, flags2, show_flags, pltaspect)
-	st.pyplot(plot2)
-	download_button(plot2, download_2_placeholder, 2)
+	plot2 = plot_data(current_df2, variables2, flags2, show_flags, scatterplot, pltaspect)
+	st.plotly_chart(plot2)
+	download_button(plot2, to_plot2, depth2, download_2_placeholder, 2)
