@@ -360,7 +360,7 @@ if two_plots:
 name_legend_placeholder.write(legend)
 
 
-
+#Displays plots and download buttons
 if to_plot1:
 	plot1 = plot_data(current_df1, variables1, flags1, show_flags, scatterplot, pltaspect)
 	st.plotly_chart(plot1)
