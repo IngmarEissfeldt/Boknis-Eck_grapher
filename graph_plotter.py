@@ -20,7 +20,6 @@ def plot_data(
 		flags: list[str],
 		show_flags: bool = False,
 		scatterplot: bool = False,
-		pltaspect: float = 0.3,
 	) -> go.Figure:
 	"""
 	If scatterplot=True, makes a scatter of vars[0] vs vars[1].
@@ -352,11 +351,11 @@ name_legend_placeholder.write(legend)
 
 #Displays plots and download buttons
 if to_plot1:
-	plot1 = plot_data(current_df1, variables1, flags1, show_flags, scatterplot, pltaspect)
+	plot1 = plot_data(current_df1, variables1, flags1, show_flags, scatterplot)
 	st.plotly_chart(plot1)
 	#download_button(plot1, to_plot1, depth1, download_1_placeholder, 1)
 
 if to_plot2 and two_plots:
-	plot2 = plot_data(current_df2, variables2, flags2, show_flags, scatterplot, pltaspect)
+	plot2 = plot_data(current_df2, variables2, flags2, show_flags, scatterplot)
 	st.plotly_chart(plot2)
 	#download_button(plot2, to_plot2, depth2, download_2_placeholder, 2)
