@@ -78,7 +78,6 @@ def plot_data(
 			yaxis_title=y_var,
 			height=600,
 			margin=dict(t=30, b=30),
-			yaxis=dict(scaleanchor='x', scaleratio=pltaspect)
 		)
 		return fig
 
@@ -123,7 +122,6 @@ def plot_data(
 
 	fig.update_layout(
 	height=600,
-	yaxis=dict(scaleanchor='x', scaleratio=pltaspect),
 	margin=dict(t=30, b=30)
 	)
 
@@ -282,14 +280,6 @@ two_plots = st.sidebar.checkbox("Toggle to graph 2 seperate plots")
 scatterplot = st.sidebar.checkbox("Toggle scatterplot instead of timeseries")
 
 
-pltaspect = st.sidebar.slider(
-	label="Pick an aspect ratio",
-	min_value=0.01,
-	max_value=1.0,
-	value=0.3,
-	step=0.01,
-	help="Default: 0.3"
-)
 
 
 range_start = df.index[0].to_pydatetime()
