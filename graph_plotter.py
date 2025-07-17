@@ -15,9 +15,10 @@ import pandas as pd
 import plotly.graph_objects as go
 
 def plot_data(
-		df: pd.DataFrame,
+		df_full: pd.DataFrame,
 		vars: list[str],
 		flags: list[str],
+		depth: int,
 		show_flags: bool = False,
 		scatterplot: bool = False,
 	) -> go.Figure:
@@ -29,7 +30,7 @@ def plot_data(
 	- orange dots where flag == 7 (inaccurate)
 	"""
 	fig = go.Figure()
-
+	
 	if scatterplot:
 		# require exactly two variables
 		if len(vars) != 2:
@@ -80,6 +81,9 @@ def plot_data(
 		)
 		return fig
 
+	
+	df = df_full.xs(int(depth[0]), level='Depth water [m]')	
+				
 	# time-series by default
 	for var in vars:
 		fig.add_trace(go.Scatter(
@@ -164,16 +168,22 @@ def download_button(plot, var_list, depth, element, key):
 
 def select_variable(plotnum, scatterplot):
 	to_plot = []
+	depth = []
 	if  not scatterplot:
-		to_plot = st.sidebar.multiselect("Choose vars for plot "+ str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"])
+		to_plot = st.sidebar.multiselect("Choose vars for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"])
+		depth = st.sidebar.selectbox("Choose depth in meter for plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"])
 	else:
-		to_plot.append(st.sidebar.selectbox("Choose var for plot "+ str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
-		to_plot.append(st.sidebar.selectbox("Choose other var for plot "+ str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
+		to_plot.append(st.sidebar.selectbox("Choose var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
+		depth = st.sidebar.selectbox("Choose depth in meter for first variable " + str(plotnum), ["1", "5", "10", "15", "20", "25"])
+				
+		to_plot.append(st.sidebar.selectbox("Choose other var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
+		depth = st.sidebar.selectbox("Choose depth in meter for first variable " + str(plotnum), ["1", "5", "10", "15", "20", "25"])
 
 		if to_plot[0] == to_plot[1]:
 			st.write("Please select 2 different variables for the scatter plot!")
 			to_plot = []
-	return to_plot
+	return to_plot, depth
+	
 
 st.set_page_config(layout="wide")
 
@@ -209,33 +219,12 @@ def df_preprocessing(df, selected_range):
 				df.iloc[row_pos, df.columns.get_loc(column)] = 0.00
 				df.iloc[row_pos, df.columns.get_loc(column) + 1] = 7
 		df[column] = df[column].astype(float)
-	 
-	start, end = selected_range
-	df = df[start:end]
-	
-	#The dataframe has 6 different depth measurements for every point in time. To have a df that can  plotted as a time series they have to be split
-	#Split df into depth specific dfs
-	df_1 = df[0::6]
-	df_5 = df[1::6]
-	df_10 = df[2::6]
-	df_15 = df[3::6]
-	df_20 = df[4::6]
-	df_25 = df[5::6]
-	
-	return df_1, df_5, df_10, df_15, df_20, df_25
-
+		
+	return df
 
 #Set Date/Time column to index
 df['Date/Time'] = pd.to_datetime(df['Date/Time'])
-df = df.set_index('Date/Time')
-
-
-df_1 = {}
-df_5 = {}
-df_10 = {}
-df_15 = {}
-df_20 = {}
-df_25 = {}
+df = df.set_index(['Date/Time', 'Depth water [m]']) 
 
 
 #Maps UI names to df names
@@ -280,9 +269,8 @@ scatterplot = st.sidebar.checkbox("Toggle scatterplot instead of timeseries")
 
 
 
-
-range_start = df.index[0].to_pydatetime()
-range_end = df.index[-1].to_pydatetime()
+range_start = df.index[0][0].to_pydatetime()
+range_end = df.index[-1][0].to_pydatetime()
 
 # Range datetime slider
 selected_range = st.sidebar.slider(
@@ -294,25 +282,14 @@ selected_range = st.sidebar.slider(
 
 
 
-df_1, df_5, df_10, df_15, df_20, df_25 = df_preprocessing(df, selected_range)
-
-#Maps UI names to code names
-depth_map = {
-	"1": df_1,
-	"5": df_5,
-	"10": df_10,
-	"15": df_15,
-	"20": df_20,
-	"25": df_25
-}
+df = df_preprocessing(df, selected_range)
 
 
 #UI to display name legend
 name_legend_placeholder = st.sidebar.empty()
 
 #UI to choose depth and columns
-depth1 = st.sidebar.selectbox("Choose depth in meter for plot 1", ["1", "5", "10", "15", "20", "25"])
-to_plot1 = select_variable(1, scatterplot)
+to_plot1, depth1 = select_variable(1, scatterplot)
 
 if to_plot1:
 	download_1_placeholder = st.sidebar.empty()
@@ -322,13 +299,10 @@ variables1 = [column_map[x] for x in to_plot1]
 flags1 = [flag_map[x] for x in to_plot1]
 columns1 = variables1 + flags1
 
-current_df1 = depth_map[depth1][columns1]
-
 to_plot2 = []
 
 if two_plots:
-	depth2 = st.sidebar.selectbox("Choose depth in meter for plot 2", ["1", "5", "10", "15", "20", "25"])
-	to_plot2 = select_variable(2, scatterplot)
+	to_plot2, depth2 = select_variable(2, scatterplot)
 	
 	if to_plot2:
 		download_2_placeholder = st.sidebar.empty()
@@ -337,7 +311,6 @@ if two_plots:
 	flags2 = [flag_map[x] for x in to_plot2]
 	columns2 = variables2 + flags2
 	
-	current_df2 = depth_map[depth2][columns2]
 
 
 #Make custom name legend for selected columns
@@ -351,11 +324,11 @@ name_legend_placeholder.write(legend)
 
 #Displays plots and download buttons
 if to_plot1:
-	plot1 = plot_data(current_df1, variables1, flags1, show_flags, scatterplot)
+	plot1 = plot_data(df, variables1, flags1, depth1, show_flags, scatterplot)
 	st.plotly_chart(plot1)
 	#download_button(plot1, to_plot1, depth1, download_1_placeholder, 1)
 
 if to_plot2 and two_plots:
-	plot2 = plot_data(current_df2, variables2, flags2, show_flags, scatterplot)
+	plot2 = plot_data(df, variables2, flags2, depth2, show_flags, scatterplot)
 	st.plotly_chart(plot2)
 	#download_button(plot2, to_plot2, depth2, download_2_placeholder, 2)
