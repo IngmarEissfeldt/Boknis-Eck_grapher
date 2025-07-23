@@ -86,7 +86,6 @@ def plot_data(
 		)
 		return fig
 
-	
 	df = df_full.xs(int(depth[0]), level='Depth water [m]')	
 				
 	# time-series by default
@@ -175,8 +174,9 @@ def select_variable(plotnum, scatterplot):
 	to_plot = []
 	depth = []
 	if  not scatterplot:
+		#Append not required because multiselect already creates a list
 		to_plot = st.sidebar.multiselect("Choose vars for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum)
-		depth = st.sidebar.selectbox("Choose depth in meter for plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum)
+		depth.append(st.sidebar.selectbox("Choose depth in meter for plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum + 1))
 	else:
 		to_plot.append(st.sidebar.selectbox("Choose var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum))
 		depth.append(st.sidebar.selectbox("Choose depth in meter for first variable in plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum + 1))
