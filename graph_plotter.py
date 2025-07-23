@@ -149,7 +149,10 @@ def download_button(plot, var_list, depth, element, key):
 		"Temperature": "T"
 	}
 
-	file_name = "BE_" + depth
+	file_name = "BE"
+
+	for x in depth:
+		file_name += "_" + x
 	
 	for var in var_list:
 		file_name += "_" + var_map[var]
@@ -212,6 +215,10 @@ df_str_io = io.StringIO(df_str)
 df = pd.read_csv(df_str_io, sep="\t")
 
 def df_preprocessing(df, selected_range):
+
+	#Trim based on selected range
+	df = df.loc[selected_range[0]:selected_range[1]]
+	
 	#Remove unnecessary columns
 	df.drop(["Latitude", "Longitude", "Sample label"], axis=1, inplace=True)
 
@@ -285,8 +292,6 @@ selected_range = st.sidebar.slider(
     value=(range_start, range_end)
 )
 
-
-
 df = df_preprocessing(df, selected_range)
 
 
@@ -331,9 +336,9 @@ name_legend_placeholder.write(legend)
 if to_plot1:
 	plot1 = plot_data(df, variables1, flags1, depth1, show_flags, scatterplot)
 	st.plotly_chart(plot1)
-	#download_button(plot1, to_plot1, depth1, download_1_placeholder, 1)
+	download_button(plot1, to_plot1, depth1, download_1_placeholder, 1)
 
 if to_plot2 and two_plots:
 	plot2 = plot_data(df, variables2, flags2, depth2, show_flags, scatterplot)
 	st.plotly_chart(plot2)
-	#download_button(plot2, to_plot2, depth2, download_2_placeholder, 2)
+	download_button(plot2, to_plot2, depth2, download_2_placeholder, 2)
