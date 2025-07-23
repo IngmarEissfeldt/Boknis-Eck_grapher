@@ -18,7 +18,7 @@ def plot_data(
 		df_full: pd.DataFrame,
 		vars: list[str],
 		flags: list[str],
-		depth: int,
+		depth: list[int],
 		show_flags: bool = False,
 		scatterplot: bool = False,
 	) -> go.Figure:
@@ -31,11 +31,16 @@ def plot_data(
 	"""
 	fig = go.Figure()
 	
+	
 	if scatterplot:
 		# require exactly two variables
 		if len(vars) != 2:
 			raise ValueError("scatterplot=True requires exactly two variables in `vars`.")
 		x_var, y_var = vars
+
+		idx  = pd.IndexSlice
+		depth =[int(x) for x in depth]
+		df = df_full.loc[idx[:, depth], :]
 
 		# Base scatter
 		fig.add_trace(go.Scatter(
@@ -170,14 +175,14 @@ def select_variable(plotnum, scatterplot):
 	to_plot = []
 	depth = []
 	if  not scatterplot:
-		to_plot = st.sidebar.multiselect("Choose vars for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"])
-		depth = st.sidebar.selectbox("Choose depth in meter for plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"])
+		to_plot = st.sidebar.multiselect("Choose vars for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum)
+		depth = st.sidebar.selectbox("Choose depth in meter for plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum)
 	else:
-		to_plot.append(st.sidebar.selectbox("Choose var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
-		depth = st.sidebar.selectbox("Choose depth in meter for first variable " + str(plotnum), ["1", "5", "10", "15", "20", "25"])
+		to_plot.append(st.sidebar.selectbox("Choose var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum))
+		depth.append(st.sidebar.selectbox("Choose depth in meter for first variable in plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum + 1))
 				
-		to_plot.append(st.sidebar.selectbox("Choose other var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"]))
-		depth = st.sidebar.selectbox("Choose depth in meter for first variable " + str(plotnum), ["1", "5", "10", "15", "20", "25"])
+		to_plot.append(st.sidebar.selectbox("Choose other var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum + 2))
+		depth.append(st.sidebar.selectbox("Choose depth in meter for second variable in plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum + 3))
 
 		if to_plot[0] == to_plot[1]:
 			st.write("Please select 2 different variables for the scatter plot!")
