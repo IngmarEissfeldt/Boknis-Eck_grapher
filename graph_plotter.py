@@ -48,7 +48,13 @@ def plot_data(
 			x=df[x_var],
 			y=df[y_var],
 			mode='markers',
-			name=f'{x_var} vs {y_var}'
+			name=f'{x_var} vs {y_var}',
+			customdata=df.index.get_level_values("Date/Time").strftime("%Y-%m-%d %H:%M:%S").to_numpy().reshape(-1, 1),
+			hovertemplate=(
+				rf"{x_var}: %{{x}}<br>"
+				rf"{y_var}: %{{y}}<br>"
+				rf"Time: %{{customdata[0]}}<extra></extra>"
+			)
 		))
 
 		# Optionally overlay flagged points on the scatter
