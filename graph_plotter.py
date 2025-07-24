@@ -4,6 +4,7 @@ import numpy as np
 import kaleido
 import plotly.graph_objects as go
 import io
+from random import randint
 from datetime import datetime, timedelta
 
 
@@ -165,12 +166,13 @@ def download_button(plot, var_list, depth, element, key):
 	buf.seek(0)  # rewind to beginning of buffer
 
 	#Download button
+	st.write(key)
 	element.download_button(
 		label=f"📥 Download plot ↑",
 		data=buf,
 		file_name=file_name,
-		mime="image/png",
-		key=key
+		mime='image/png',
+		key=key+'_download_button'
 	)
 
 def select_variable(plotnum, scatterplot):
@@ -178,14 +180,14 @@ def select_variable(plotnum, scatterplot):
 	depth = []
 	if  not scatterplot:
 		#Append not required because multiselect already creates a list
-		to_plot = st.sidebar.multiselect("Choose vars for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum)
-		depth.append(st.sidebar.selectbox("Choose depth in meter for plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum + 1))
+		to_plot = st.sidebar.multiselect("Choose vars for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum+'var_timeseries_selection')
+		depth.append(st.sidebar.selectbox("Choose depth in meter for plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum+'depth_timeseries_selection'))
 	else:
-		to_plot.append(st.sidebar.selectbox("Choose var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum))
-		depth.append(st.sidebar.selectbox("Choose depth in meter for first variable in plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum + 1))
+		to_plot.append(st.sidebar.selectbox("Choose var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum+'1_var_scatterplot_selection'))
+		depth.append(st.sidebar.selectbox("Choose depth in meter for first variable in plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum+'1_depth_scatterplot_selection'))
 				
-		to_plot.append(st.sidebar.selectbox("Choose other var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum + 2))
-		depth.append(st.sidebar.selectbox("Choose depth in meter for second variable in plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum + 3))
+		to_plot.append(st.sidebar.selectbox("Choose other var for plot " + str(plotnum), ["Nitrate", "Nitrite", "Oxygen", "Phosphate", "Salinity", "Silicate", "Temperature"], key=plotnum+'2_var_scatterplot_selection'))
+		depth.append(st.sidebar.selectbox("Choose depth in meter for second variable in plot " + str(plotnum), ["1", "5", "10", "15", "20", "25"], key=plotnum+'2_depth_scatterplot_selection'))
 
 		if to_plot[0] == to_plot[1]:
 			st.write("Please select 2 different variables for the scatter plot!")
@@ -299,7 +301,8 @@ df = df_preprocessing(df, selected_range)
 name_legend_placeholder = st.sidebar.empty()
 
 #UI to choose depth and columns
-to_plot1, depth1 = select_variable(1, scatterplot)
+to_plot1, depth1 = select_variable('one', scatterplot)
+
 
 if to_plot1:
 	download_1_placeholder = st.sidebar.empty()
@@ -312,7 +315,9 @@ columns1 = variables1 + flags1
 to_plot2 = []
 
 if two_plots:
-	to_plot2, depth2 = select_variable(2, scatterplot)
+	st.sidebar.write("––––––––––––––––––––––––––––––––––––––––––––")
+
+	to_plot2, depth2 = select_variable('two', scatterplot)
 	
 	if to_plot2:
 		download_2_placeholder = st.sidebar.empty()
@@ -336,9 +341,9 @@ name_legend_placeholder.write(legend)
 if to_plot1:
 	plot1 = plot_data(df, variables1, flags1, depth1, show_flags, scatterplot)
 	st.plotly_chart(plot1)
-	download_button(plot1, to_plot1, depth1, download_1_placeholder, 1)
+	download_button(plot1, to_plot1, depth1, download_1_placeholder, 'DL1')
 
 if to_plot2 and two_plots:
 	plot2 = plot_data(df, variables2, flags2, depth2, show_flags, scatterplot)
 	st.plotly_chart(plot2)
-	download_button(plot2, to_plot2, depth2, download_2_placeholder, 2)
+	download_button(plot2, to_plot2, depth2, download_2_placeholder, 'DL2')
