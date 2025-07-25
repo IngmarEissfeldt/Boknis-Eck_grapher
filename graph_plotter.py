@@ -141,7 +141,7 @@ def plot_data(
 def download_button(plot, var_list, depth, element, key, local):
 	
 	if not local:
-		download_clicked = st.sidebar.button("Download Button")
+		download_clicked = element.button("📥 Download plot ↑")
 		if download_clicked:
 			st.sidebar.write("Hit the small camera icon on the plot to download.")
 	
@@ -208,10 +208,8 @@ st.write("Click the top left arrow to begin!")
 url = st_javascript("await window.location.href")
 if url:
     if "localhost" in url or "127.0.0.1" in url:
-        st.write("Running locally")
         local = True
     else:
-        st.write("Running from hosted webapp")
         local = False
 
 #st. are streamlit UI elements
