@@ -6,14 +6,8 @@ import plotly.graph_objects as go
 import io
 from random import randint
 from datetime import datetime, timedelta
+from streamlit_javascript import st_javascript
 
-
-#Plots selected data.
-import pandas as pd
-import plotly.graph_objects as go
-
-import pandas as pd
-import plotly.graph_objects as go
 
 def plot_data(
 		df_full: pd.DataFrame,
@@ -144,42 +138,48 @@ def plot_data(
 
 
 #Sets download button
-def download_button(plot, var_list, depth, element, key):
-
-	var_map = {
-		"Nitrate": "Nia", 
-		"Nitrite": "Nii",
-		"Phosphate": "P",  
-		"Oxygen": "O", 
-		"Salinity": "Sa", 
-		"Silicate": "Si", 
-		"Temperature": "T"
-	}
-
-	file_name = "BE"
-
-	for x in depth:
-		file_name += "_" + x
+def download_button(plot, var_list, depth, element, key, local):
 	
-	for var in var_list:
-		file_name += "_" + var_map[var]
+	if not local:
+		download_clicked = st.sidebar.button("Download Button")
+		if download_clicked:
+			st.sidebar.write("Hit the small camera icon on the plot to download.")
 	
-	file_name += ".png"
+	else:
 
-	#buffer for Download Button
-	buf = io.BytesIO()
-	plot.write_image(buf)
-	buf.seek(0)  # rewind to beginning of buffer
+		var_map = {
+			"Nitrate": "Nia", 
+			"Nitrite": "Nii",
+			"Phosphate": "P",  
+			"Oxygen": "O", 
+			"Salinity": "Sa", 
+			"Silicate": "Si", 
+			"Temperature": "T"
+		}
 
-	#Download button
-	st.write(key)
-	element.download_button(
-		label=f"📥 Download plot ↑",
-		data=buf,
-		file_name=file_name,
-		mime='image/png',
-		key=key+'_download_button'
-	)
+		file_name = "BE"
+
+		for x in depth:
+			file_name += "_" + x
+		
+		for var in var_list:
+			file_name += "_" + var_map[var]
+		
+		file_name += ".png"
+
+		#buffer for Download Button
+		buf = io.BytesIO()
+		plot.write_image(buf)
+		buf.seek(0)  # rewind to beginning of buffer
+
+		#Download button
+		element.download_button(
+			label=f"📥 Download plot ↑",
+			data=buf,
+			file_name=file_name,
+			mime='image/png',
+			key=key+'_download_button'
+		)
 
 def select_variable(plotnum, scatterplot):
 	to_plot = []
@@ -204,6 +204,15 @@ def select_variable(plotnum, scatterplot):
 st.set_page_config(layout="wide")
 
 st.write("Click the top left arrow to begin!")
+
+url = st_javascript("await window.location.href")
+if url:
+    if "localhost" in url or "127.0.0.1" in url:
+        st.write("Running locally")
+        local = True
+    else:
+        st.write("Running from hosted webapp")
+        local = False
 
 #st. are streamlit UI elements
 st.title("Boknis Eck Data")
@@ -347,9 +356,9 @@ name_legend_placeholder.write(legend)
 if to_plot1:
 	plot1 = plot_data(df, variables1, flags1, depth1, show_flags, scatterplot)
 	st.plotly_chart(plot1)
-	download_button(plot1, to_plot1, depth1, download_1_placeholder, 'DL1')
+	download_button(plot1, to_plot1, depth1, download_1_placeholder, 'DL1', local)
 
 if to_plot2 and two_plots:
 	plot2 = plot_data(df, variables2, flags2, depth2, show_flags, scatterplot)
 	st.plotly_chart(plot2)
-	download_button(plot2, to_plot2, depth2, download_2_placeholder, 'DL2')
+	download_button(plot2, to_plot2, depth2, download_2_placeholder, 'DL2', local)
