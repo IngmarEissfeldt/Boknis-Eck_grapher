@@ -37,6 +37,11 @@ def plot_data(
 		depth =[int(x) for x in depth]
 		df = df_full.loc[idx[:, depth], :]
 
+		times      = df.index.get_level_values("Date/Time")
+		start_time = times.min().strftime("%Y-%m-%d %H:%M:%S")
+		end_time   = times.max().strftime("%Y-%m-%d %H:%M:%S")
+
+
 		# Base scatter
 		fig.add_trace(go.Scatter(
 			x=df[x_var],
@@ -88,6 +93,10 @@ def plot_data(
 		return fig
 
 	df = df_full.xs(int(depth[0]), level='Depth water [m]')	
+	
+	start_time = df.index.min().strftime("%Y-%m-%d %H:%M:%S")
+	end_time   = df.index.max().strftime("%Y-%m-%d %H:%M:%S")
+
 				
 	# time-series by default
 	for var in vars:
@@ -129,8 +138,9 @@ def plot_data(
 				))
 
 	fig.update_layout(
-	height=600,
-	margin=dict(t=30, b=30)
+		title=f"Time range: {start_time} – {end_time}",
+		height=600,
+		margin=dict(t=30, b=30)
 	)
 
 	return fig
