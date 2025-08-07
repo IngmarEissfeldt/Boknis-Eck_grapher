@@ -1,29 +1,28 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import kaleido
-import plotly.graph_objects as go
-import io
-from random import randint
-from datetime import datetime, timedelta
-from streamlit_javascript import st_javascript
+import streamlit as st # streamlit for the webapp
+import pandas as pd # pandas for easy Dataframe manipulation
+import numpy as np # numpy for various 
+import plotly.graph_objects as go # plotly for pretty interactive plots
+import kaleido # kaleido for custom file names when downloading is self hosted mode
+import io # io for simulating files
+from datetime import datetime, timedelta # datetime for working with datetime values
+from streamlit_javascript import st_javascript # streamlit_javascript for checking if the user is running locally
 
 
+# This file contains all the code for the streamlit app
+# It handles the dataframe processing, manipulation, plotting and streamlit rendering
+
+
+# Handles all plotting functionality
 def plot_data(
 		df_full: pd.DataFrame,
-		vars: list[str],
-		flags: list[str],
-		depth: list[int],
-		show_flags: bool = False,
-		scatterplot: bool = False,
+		vars: list[str], # List of variables in dataframe format (ex.: O2 [µmol/l]     )
+		flags: list[str], # List of flags in dataframe format    (ex.: Flag ((Oxygen)) )
+		depth: list[int], # List of depths, only more than 1 when scatterplot is True
+		show_flags: bool = False, # If true it will show flags as colored dots
+		scatterplot: bool = False, # If true it will plot a scatterplot of vars[0] and vars[1]
 	) -> go.Figure:
-	"""
-	If scatterplot=True, makes a scatter of vars[0] vs vars[1].
-	Otherwise plots each var over the index (lines+markers),
-	and if show_flags=True overlays:
-	- red dots where flag == 9 (missing)
-	- orange dots where flag == 7 (inaccurate)
-	"""
+
+		
 	fig = go.Figure()
 	
 	
@@ -149,12 +148,13 @@ def plot_data(
 
 #Sets download button
 def download_button(plot, var_list, depth, element, key, local):
-	
+
 	if not local:
 		download_clicked = element.button("📥 Download plot ↑")
 		if download_clicked:
 			st.sidebar.write("Hit the small camera icon on the plot to download.")
-	
+
+	# Downloading a plot with a custom file name requires chromium which the hosted server doesn't support	
 	else:
 
 		var_map = {
@@ -191,6 +191,7 @@ def download_button(plot, var_list, depth, element, key, local):
 			key=key+'_download_button'
 		)
 
+
 def select_variable(plotnum, scatterplot):
 	to_plot = []
 	depth = []
@@ -210,6 +211,7 @@ def select_variable(plotnum, scatterplot):
 			to_plot = []
 	return to_plot, depth
 	
+
 
 st.set_page_config(layout="wide")
 
@@ -235,6 +237,7 @@ with open("BoknisEck_2015-2023.tab", "r", encoding="utf-8") as file:
     		description = content[:i+2]
     		df_str = content[i+2:]
     		break
+   
 #The string table is simulated as a file using IO and read as a csv by pandas
 df_str_io = io.StringIO(df_str)
 df = pd.read_csv(df_str_io, sep="\t")
@@ -330,12 +333,14 @@ to_plot1, depth1 = select_variable('one', scatterplot)
 if to_plot1:
 	download_1_placeholder = st.sidebar.empty()
 
+
 #Map selection names to column names
 variables1 = [column_map[x] for x in to_plot1]
 flags1 = [flag_map[x] for x in to_plot1]
 columns1 = variables1 + flags1
 
 to_plot2 = []
+
 
 if two_plots:
 	st.sidebar.write("––––––––––––––––––––––––––––––––––––––––––––")
@@ -351,8 +356,9 @@ if two_plots:
 	
 
 
-#Make custom name legend for selected columns
+# Make custom name legend for selected columns
 legend = pd.DataFrame({'Common': to_plot1, 'Scientific': variables1})
+
 
 if two_plots:
 	legend2 = pd.DataFrame({'Common': to_plot2, 'Scientific': variables2})
