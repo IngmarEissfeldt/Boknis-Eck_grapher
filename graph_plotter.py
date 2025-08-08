@@ -228,16 +228,21 @@ if url:
 st.title("Boknis Eck Data")
 
 #The .tab file contains a large description in front of the table, this splits the file into the description (which ends with */) and the table
-with open("BoknisEck_2015-2023.tab", "r", encoding="utf-8") as file:
-    content = file.read()
-    description = ""
-    df_str = ""
-    for i in range(len(content)):
-    	if content[i] == "*" and content[i+1] == "/":
-    		description = content[:i+2]
-    		df_str = content[i+2:]
-    		break
-   
+@st.cache_data
+def load_data():
+	with open("BoknisEck_2015-2023.tab", "r", encoding="utf-8") as file:
+		content = file.read()
+		description = ""
+		df_str = ""
+		for i in range(len(content)):
+			if content[i] == "*" and content[i+1] == "/":
+				description = content[:i+2]
+				df_str = content[i+2:]
+				break
+	return description, df_str
+	   
+description, df_str = load_data()
+
 #The string table is simulated as a file using IO and read as a csv by pandas
 df_str_io = io.StringIO(df_str)
 df = pd.read_csv(df_str_io, sep="\t")
