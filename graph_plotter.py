@@ -150,9 +150,9 @@ def plot_data(
 def download_button(plot, var_list, depth, element, key, local):
 
 	if not local:
-		download_clicked = element.button("📥 Download plot ↑")
+		download_clicked = element.button("📥 Download plot ↑", key=key+'_fake_download_button')
 		if download_clicked:
-			st.sidebar.write("Hit the small camera icon on the plot to download.", key=key+'_fake_download_button')
+			st.sidebar.write("Hit the small camera icon on the plot to download.")
 
 	# Downloading a plot with a custom file name requires chromium which the hosted server doesn't support	
 	else:
